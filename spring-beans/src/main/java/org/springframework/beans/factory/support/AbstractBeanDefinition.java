@@ -59,6 +59,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 		implements BeanDefinition, Cloneable {
 
 	/**
+	 * bean的作用范围
 	 * Constant for the default scope name: {@code ""}, equivalent to singleton
 	 * status unless overridden from a parent bean definition (if applicable).
 	 */

@@ -19,13 +19,13 @@ public class BeanFactoryTest {
 
 	@Test
 	public void xmlBeanFactoryBeanFactory() {
-		BeanFactory factory = new XmlBeanFactory(new ClassPathResource(""));
+		XmlBeanFactory factory = new XmlBeanFactory(new ClassPathResource(""));
 		factory.getBean(Class.class);
 	}
 
 	@Test
 	public void classPathContextTest() {
-		BeanFactory context = new ClassPathXmlApplicationContext(".xml");
+		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(".xml");
 		context.getBean(Class.class);
 	}
 
