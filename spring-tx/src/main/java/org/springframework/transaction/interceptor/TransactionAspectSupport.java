@@ -279,29 +279,36 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			final InvocationCallback invocation) throws Throwable {
 
 		// If the transaction attribute is null, the method is non-transactional.
+		// 获取@Transaction中的相关属性,如果属性为空,则该方法没有事务
 		TransactionAttributeSource tas = getTransactionAttributeSource();
 		final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
+		// 获取当前TransactionManager的配置
 		final PlatformTransactionManager tm = determineTransactionManager(txAttr);
+		// 获取当前方法的一个签名
 		final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
-
+		// 如果配置的TransactionManager不是CallbackPreferringPlatformTransactionManager类型的,则为当前方法的执行新建一个事务
 		if (txAttr == null || !(tm instanceof CallbackPreferringPlatformTransactionManager)) {
 			// Standard transaction demarcation with getTransaction and commit/rollback calls.
+			// 为当前方法的执行新建一个事务
 			TransactionInfo txInfo = createTransactionIfNecessary(tm, txAttr, joinpointIdentification);
 
 			Object retVal;
 			try {
 				// This is an around advice: Invoke the next interceptor in the chain.
 				// This will normally result in a target object being invoked.
+				// 执行目标方法
 				retVal = invocation.proceedWithInvocation();
 			}
 			catch (Throwable ex) {
 				// target invocation exception
+				// 在执行抛出异常时对异常进行处理，并织入异常处理逻辑
 				completeTransactionAfterThrowing(txInfo, ex);
 				throw ex;
 			}
 			finally {
 				cleanupTransactionInfo(txInfo);
 			}
+			// 提交当前事务
 			commitTransactionAfterReturning(txInfo);
 			return retVal;
 		}
@@ -311,6 +318,10 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 			// It's a CallbackPreferringPlatformTransactionManager: pass a TransactionCallback in.
 			try {
+				// 如果当前TransactionManager实现了CallbackPreferringPlatformTransactionManager，
+				// 则通过其execute()方法进行事务处理。
+				// 这里CallbackPreferringPlatform-TransactionManager的作用在于其提供了一个execute()方法，
+				// 用于供给实现了自定义的TransactionManager的类实现事务的相关处理逻辑
 				Object result = ((CallbackPreferringPlatformTransactionManager) tm).execute(txAttr, status -> {
 					TransactionInfo txInfo = prepareTransactionInfo(tm, txAttr, joinpointIdentification, status);
 					try {
