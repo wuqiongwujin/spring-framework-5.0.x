@@ -88,6 +88,7 @@ final class PostProcessorRegistrationDelegate {
 			}
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
 			registryProcessors.addAll(currentRegistryProcessors);
+			// 获取工厂中所有的后置处理器并处理
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
 			currentRegistryProcessors.clear();
 
@@ -268,6 +269,7 @@ final class PostProcessorRegistrationDelegate {
 			Collection<? extends BeanDefinitionRegistryPostProcessor> postProcessors, BeanDefinitionRegistry registry) {
 
 		for (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) {
+			// 放入process类定义
 			postProcessor.postProcessBeanDefinitionRegistry(registry);
 		}
 	}

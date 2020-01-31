@@ -84,7 +84,9 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 */
 	public AnnotationConfigApplicationContext(Class<?>... annotatedClasses) {
 		this();
+		// 注册注解配置类
 		register(annotatedClasses);
+		// 刷新bean工厂
 		refresh();
 	}
 
@@ -153,6 +155,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @see #refresh()
 	 */
 	public void register(Class<?>... annotatedClasses) {
+		// 注册一个或多个要处理的注解的类
 		Assert.notEmpty(annotatedClasses, "At least one annotated class must be specified");
 		this.reader.register(annotatedClasses);
 	}
