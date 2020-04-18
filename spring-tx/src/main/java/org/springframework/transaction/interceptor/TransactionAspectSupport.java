@@ -471,6 +471,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			@Nullable TransactionAttribute txAttr, final String joinpointIdentification) {
 
 		// If no name specified, apply method identification as transaction name.
+		// 如果指定没有名称则使用方法名作为事务名称,并使用DelegatingTransactionAttribute封装txAttr
 		if (txAttr != null && txAttr.getName() == null) {
 			txAttr = new DelegatingTransactionAttribute(txAttr) {
 				@Override
@@ -483,6 +484,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		TransactionStatus status = null;
 		if (txAttr != null) {
 			if (tm != null) {
+				// 获取TransactionStatus
 				status = tm.getTransaction(txAttr);
 			}
 			else {
@@ -492,6 +494,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				}
 			}
 		}
+		// 准备事务信息，事务信息TransactionInfo封装了事务配置和状态信息
 		return prepareTransactionInfo(tm, txAttr, joinpointIdentification, status);
 	}
 
@@ -507,16 +510,20 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			@Nullable TransactionAttribute txAttr, String joinpointIdentification,
 			@Nullable TransactionStatus status) {
 
+		// 创建事务对象
 		TransactionInfo txInfo = new TransactionInfo(tm, txAttr, joinpointIdentification);
+		// 如果事务属性不为null，需要为方法使用事务
 		if (txAttr != null) {
 			// We need a transaction for this method...
 			if (logger.isTraceEnabled()) {
 				logger.trace("Getting transaction for [" + txInfo.getJoinpointIdentification() + "]");
 			}
 			// The transaction manager will flag an error if an incompatible tx already exists.
+			// 为事务信息对象设置事务状态
 			txInfo.newTransactionStatus(status);
 		}
 		else {
+			// 如果事务属性为null，不需要为方法使用事务
 			// The TransactionInfo.hasTransaction() method will return false. We created it only
 			// to preserve the integrity of the ThreadLocal stack maintained in this class.
 			if (logger.isTraceEnabled()) {
@@ -528,6 +535,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		// We always bind the TransactionInfo to the thread, even if we didn't create
 		// a new transaction here. This guarantees that the TransactionInfo stack
 		// will be managed correctly even if no transaction was created by this aspect.
+		// 把当前创建的事务信息对象和线程绑定
 		txInfo.bindToThread();
 		return txInfo;
 	}

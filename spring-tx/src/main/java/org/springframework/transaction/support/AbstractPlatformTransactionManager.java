@@ -349,11 +349,14 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			definition = new DefaultTransactionDefinition();
 		}
 
+		// 判断当前线程是否存在事务,判断依据为当前线程记录的连接不为空,且连接中(connectionHolder)中的transactionActive属性不为空
 		if (isExistingTransaction(transaction)) {
 			// Existing transaction found -> check propagation behavior to find out how to behave.
+			// 当前线程已存在事务的处理
 			return handleExistingTransaction(definition, transaction, debugEnabled);
 		}
 
+		// 验证事务超时设施是否合理
 		// Check definition settings for new transaction.
 		if (definition.getTimeout() < TransactionDefinition.TIMEOUT_DEFAULT) {
 			throw new InvalidTimeoutException("Invalid transaction timeout", definition.getTimeout());
