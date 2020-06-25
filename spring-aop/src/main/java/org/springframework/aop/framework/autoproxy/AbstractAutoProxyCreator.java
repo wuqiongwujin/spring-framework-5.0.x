@@ -258,6 +258,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// Create proxy here if we have a custom TargetSource.
 		// Suppresses unnecessary default instantiation of the target bean:
 		// The TargetSource will handle target instances in a custom fashion.
+		// TargetSource是spring aop预留给用户自定义实例化的接口，如果存在TargetSource默认不实例化,而是按照用户自定义方式实例化
 		TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
 		if (targetSource != null) {
 			if (StringUtils.hasLength(beanName)) {
@@ -337,19 +338,22 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @return a proxy wrapping the bean, or the raw bean instance as-is
 	 */
 	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+		// 如果是用户自定义获取实例，不需要增强处理
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
+		// 查询map缓存标记过false，不需要增强
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
+		// springAOP基础构建类，标记过false，不需要增强
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
 
 		// Create proxy if we have advice.
-		// 获取增强方法
+		// 获取增强方法(包括TransactionAttributeSourceAdvisor(持有TransactionInterceptor))
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
@@ -358,7 +362,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			this.proxyTypes.put(cacheKey, proxy.getClass());
 			return proxy;
 		}
-
+		// 如果不存在增强，标记false，提高再次进入效率
 		this.advisedBeans.put(cacheKey, Boolean.FALSE);
 		return bean;
 	}
@@ -445,32 +449,40 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
 			@Nullable Object[] specificInterceptors, TargetSource targetSource) {
 
+		// 如果是ConfigurableListableBeanFactory接口(DefaultListableBeanFactory就是)则，暴露目标类
 		if (this.beanFactory instanceof ConfigurableListableBeanFactory) {
+			// 暴露需要被代理的bean
+			// 给beanFactory->beanDefinition定义一个属性:K=AutoProxyUtils.originalTargetClass, v= 需要被代理的BeanClass
 			AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) this.beanFactory, beanName, beanClass);
 		}
 
 		ProxyFactory proxyFactory = new ProxyFactory();
 		proxyFactory.copyFrom(this);
-
+		// 如果不是代理目标类
 		if (!proxyFactory.isProxyTargetClass()) {
+			// 是否beanFactory定义了代理目标类
 			if (shouldProxyTargetClass(beanClass, beanName)) {
+				// 代理工厂设置代理目标类(CGLIB)
 				proxyFactory.setProxyTargetClass(true);
 			}
 			else {
+				// 否则设置代理接口(JDK)
 				evaluateProxyInterfaces(beanClass, proxyFactory);
 			}
 		}
-
+        // 将拦截器(TransactionInterceptor)包装成增强(通知)
 		Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
+		// 将增强设置进代理工厂
 		proxyFactory.addAdvisors(advisors);
 		proxyFactory.setTargetSource(targetSource);
+		// 空方法，留给子类扩展使用
 		customizeProxyFactory(proxyFactory);
-
+        // 用户控制代理工厂是否还允许继续添加通知，默认false
 		proxyFactory.setFrozen(this.freezeProxy);
 		if (advisorsPreFiltered()) {
 			proxyFactory.setPreFiltered(true);
 		}
-
+		// 代理工厂获取代理对象
 		return proxyFactory.getProxy(getProxyClassLoader());
 	}
 
