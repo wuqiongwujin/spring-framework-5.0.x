@@ -339,6 +339,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 */
 	@Override
 	public final TransactionStatus getTransaction(@Nullable TransactionDefinition definition) throws TransactionException {
+		// 获取数据源配置
 		Object transaction = doGetTransaction();
 
 		// Cache debug flag to avoid repeated checks.
@@ -346,6 +347,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 
 		if (definition == null) {
 			// Use defaults if no transaction definition given.
+			// 使用默认事务定义，事务传播：支持当前事务，没有则开启新事务；超时：-1；事务隔离级别：使用存储引擎的隔离级别
 			definition = new DefaultTransactionDefinition();
 		}
 
@@ -370,7 +372,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			throw new IllegalTransactionStateException(
 					"No existing transaction found for transaction marked with propagation 'mandatory'");
 		}
-		// 如果事务传播特性为required、required_new或nested
+		// 当前线程不存在事务，并且事务传播特性为required、required_new或nested则开启一个事务，和和开启事务同步
 		else if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRED ||
 				definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW ||
 				definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) {
@@ -615,7 +617,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 				}
 				// 在线程中保存与事务处理有关的信息，并将线程里有关的线程局部变量重置
 				String name = TransactionSynchronizationManager.getCurrentTransactionName();
-				// 重置当前线程中事务相关的线程局部变量
+				// 重置当前线程中事务相关的线程局部变量,是否只读、事务隔离级别、
 				TransactionSynchronizationManager.setCurrentTransactionName(null);
 				boolean readOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
 				TransactionSynchronizationManager.setCurrentTransactionReadOnly(false);
@@ -698,8 +700,10 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		List<TransactionSynchronization> suspendedSynchronizations =
 				TransactionSynchronizationManager.getSynchronizations();
 		for (TransactionSynchronization synchronization : suspendedSynchronizations) {
+			// 移除当前线程中的数据库连接，并关闭数据库连接
 			synchronization.suspend();
 		}
+		// 移除当前线程同步事务信息
 		TransactionSynchronizationManager.clearSynchronization();
 		return suspendedSynchronizations;
 	}
@@ -863,27 +867,34 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			boolean unexpectedRollback = unexpected;
 
 			try {
+				// 解绑当前线程绑定的会话工厂，并关闭会话
 				triggerBeforeCompletion(status);
 
 				if (status.hasSavepoint()) {
+					// 1.如果有保存点，即嵌套式事务
 					if (status.isDebug()) {
 						logger.debug("Rolling back transaction to savepoint");
 					}
+					// 回滚到保存点
 					status.rollbackToHeldSavepoint();
 				}
 				else if (status.isNewTransaction()) {
+					//2.如果就是一个简单事务
 					if (status.isDebug()) {
 						logger.debug("Initiating transaction rollback");
 					}
 					doRollback(status);
 				}
 				else {
+					//3.当前存在事务且没有保存点，即加入当前事务的
 					// Participating in larger transaction
 					if (status.hasTransaction()) {
 						if (status.isLocalRollbackOnly() || isGlobalRollbackOnParticipationFailure()) {
+							//如果已经标记为回滚 或 当加入事务失败时全局回滚（默认true）
 							if (status.isDebug()) {
 								logger.debug("Participating transaction failed - marking existing transaction as rollback-only");
 							}
+							//设置当前connectionHolder：当加入一个已存在事务时回滚
 							doSetRollbackOnly(status);
 						}
 						else {
@@ -902,6 +913,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 				}
 			}
 			catch (RuntimeException | Error ex) {
+				//关闭会话，重置SqlSessionHolder属性
 				triggerAfterCompletion(status, TransactionSynchronization.STATUS_UNKNOWN);
 				throw ex;
 			}
@@ -915,6 +927,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			}
 		}
 		finally {
+			// 解绑当前线程
 			cleanupAfterCompletion(status);
 		}
 	}

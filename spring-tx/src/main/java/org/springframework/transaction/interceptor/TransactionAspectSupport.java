@@ -306,6 +306,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				throw ex;
 			}
 			finally {
+				// 清除当前线程事务信息
 				cleanupTransactionInfo(txInfo);
 			}
 			// 提交当前事务
