@@ -339,7 +339,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 */
 	@Override
 	public final TransactionStatus getTransaction(@Nullable TransactionDefinition definition) throws TransactionException {
-		// 获取数据源配置
+		// 获取数据源配置(持有DataSource,ConnectionHolder)
 		Object transaction = doGetTransaction();
 
 		// Cache debug flag to avoid repeated checks.
@@ -376,6 +376,8 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		else if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRED ||
 				definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW ||
 				definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) {
+			// 新建事务
+			// 空挂起
 			SuspendedResourcesHolder suspendedResources = suspend(null);
 			if (debugEnabled) {
 				logger.debug("Creating new transaction with name [" + definition.getName() + "]: " + definition);
@@ -387,9 +389,9 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 				// 创建一个新的事务状态
 				DefaultTransactionStatus status = newTransactionStatus(
 						definition, transaction, true, newSynchronization, debugEnabled, suspendedResources);
-				// 开始执行事务,具体逻辑由具体事务处理器实现
+				// 开始执行事务,具体逻辑由具体事务处理器实现,如果是新连接,绑定到当前线程
 				doBegin(transaction, definition);
-				// 准备同步事务状态
+				// 准备同步事务状态,将事务信息记录在当前线程中
 				prepareSynchronization(status, definition);
 				return status;
 			}
