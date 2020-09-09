@@ -279,7 +279,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			final InvocationCallback invocation) throws Throwable {
 
 		// If the transaction attribute is null, the method is non-transactional.
-		// 获取@Transaction中的相关属性,如果属性为空,则该方法没有事务
+		// TransactionAttributeSource没有注入,则该方法没有事务
 		TransactionAttributeSource tas = getTransactionAttributeSource();
 		final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
 		// 获取当前TransactionManager的配置
@@ -387,7 +387,9 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	 */
 	@Nullable
 	protected PlatformTransactionManager determineTransactionManager(@Nullable TransactionAttribute txAttr) {
+		// 寻找指定的事务管理器
 		// Do not attempt to lookup tx manager if no tx attributes are set
+		// 如果没有注入事务属性则返回默认事务管理器
 		if (txAttr == null || this.beanFactory == null) {
 			return getTransactionManager();
 		}
@@ -404,6 +406,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			if (defaultTransactionManager == null) {
 				defaultTransactionManager = this.transactionManagerCache.get(DEFAULT_TRANSACTION_MANAGER_KEY);
 				if (defaultTransactionManager == null) {
+					// 从bean工厂中获取PlatformTransactionManager类型事务管理器(因此我们可以自定义事务管理器并注入)
 					defaultTransactionManager = this.beanFactory.getBean(PlatformTransactionManager.class);
 					this.transactionManagerCache.putIfAbsent(
 							DEFAULT_TRANSACTION_MANAGER_KEY, defaultTransactionManager);
