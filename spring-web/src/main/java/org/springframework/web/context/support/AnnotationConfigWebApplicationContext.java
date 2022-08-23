@@ -193,11 +193,13 @@ public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWe
 	@Override
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) {
 		AnnotatedBeanDefinitionReader reader = getAnnotatedBeanDefinitionReader(beanFactory);
+		// 创建一个类定义扫描器,用于扫描包或者类
 		ClassPathBeanDefinitionScanner scanner = getClassPathBeanDefinitionScanner(beanFactory);
 
 		BeanNameGenerator beanNameGenerator = getBeanNameGenerator();
 		if (beanNameGenerator != null) {
 			reader.setBeanNameGenerator(beanNameGenerator);
+			// bean定义扫描器需要一个bean名称生成器
 			scanner.setBeanNameGenerator(beanNameGenerator);
 			beanFactory.registerSingleton(AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR, beanNameGenerator);
 		}
@@ -221,6 +223,7 @@ public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWe
 				logger.info("Scanning base packages: [" +
 						StringUtils.collectionToCommaDelimitedString(this.basePackages) + "]");
 			}
+			// 扫描指定的包路径
 			scanner.scan(StringUtils.toStringArray(this.basePackages));
 		}
 
