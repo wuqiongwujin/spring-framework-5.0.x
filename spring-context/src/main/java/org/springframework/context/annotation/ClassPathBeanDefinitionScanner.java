@@ -162,7 +162,9 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		this.registry = registry;
 
+		//使用默认的过滤器
 		if (useDefaultFilters) {
+			//默认的 注解@Service @Component
 			registerDefaultFilters();
 		}
 		setEnvironment(environment);
@@ -272,7 +274,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		for (String basePackage : basePackages) {
-			// 获取指定包路径下的候选bean定义
+			// 获取指定包路径下的候选bean定义,根据构造方法中设置的默认注解(解析@Component和继承了@Component的注解的bean)
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
 			for (BeanDefinition candidate : candidates) {
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
@@ -289,6 +291,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 					definitionHolder =
 							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					beanDefinitions.add(definitionHolder);
+					// 将bean定义放入beanDefinitionMap中
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}
