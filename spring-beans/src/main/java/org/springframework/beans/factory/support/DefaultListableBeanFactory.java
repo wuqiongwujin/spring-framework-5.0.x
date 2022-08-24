@@ -728,13 +728,19 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
 		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		// this.beanDefinitionNames 保存了所有的 beanNames
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
 		// Trigger initialization of all non-lazy singleton beans...
+		// 触发所有的非懒加载的 singleton beans 的初始化操作
 		for (String beanName : beanNames) {
+			// 合并父 beanDefinition 与子 beanDefinition，涉及到 bean 继承的关系
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+			// 非抽象、非懒加载的 singletons。如果配置了 'abstract = true'，则不需要初始化
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+				// 处理 FactoryBean
 				if (isFactoryBean(beanName)) {
+					// 在 FactoryBean的beanName 前面加上 ‘&’ 符号
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
 						final FactoryBean<?> factory = (FactoryBean<?>) bean;
@@ -748,11 +754,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							isEagerInit = (factory instanceof SmartFactoryBean &&
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
+						// 对非懒加载的 FactoryBean 实例化
 						if (isEagerInit) {
 							getBean(beanName);
 						}
 					}
 				}
+				// 对于普通的 Bean，只要调用 getBean(beanName) 这个方法就可以进行初始化了
 				else {
 					getBean(beanName);
 				}
