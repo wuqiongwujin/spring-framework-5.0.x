@@ -71,15 +71,15 @@ import org.springframework.util.StringUtils;
 public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements SingletonBeanRegistry {
 
 	/** Cache of singleton objects: bean name --> bean instance */
-	/** bean name 和bean instance的对应关系 */
+	/** bean name 和bean instance的对应关系,一级缓存，保存完成初始化的单例bean实例 */
 	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
 
 	/** Cache of singleton factories: bean name --> ObjectFactory */
-	/** bean name 和bean的工厂的对应关系 */
+	/** bean name 和bean的工厂的对应关系,保存单例bean的工厂函数对象(类的初始化策略) */
 	private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
 
 	/** Cache of early singleton objects: bean name --> bean instance */
-	/** 提前暴露的bean */
+	/** 提前暴露的bean,还未初始化完成，正在初始化中，处理循环依赖用到 */
 	private final Map<String, Object> earlySingletonObjects = new HashMap<>(16);
 
 	/** Set of registered singletons, containing the bean names in registration order */
@@ -191,7 +191,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 					if (singletonFactory != null) {
 						singletonObject = singletonFactory.getObject();
-						// 记录在缓存中，这两个缓存互斥
+						// 将该bean放入二级缓存中，该缓存表明该bean在初始化中，同时将bean从一级缓存中移除
 						this.earlySingletonObjects.put(beanName, singletonObject);
 						this.singletonFactories.remove(beanName);
 					}
