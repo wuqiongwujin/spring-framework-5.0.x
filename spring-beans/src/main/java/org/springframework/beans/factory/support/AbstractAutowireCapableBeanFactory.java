@@ -562,6 +562,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Eagerly cache singletons to be able to resolve circular references
 		// even when triggered by lifecycle interfaces like BeanFactoryAware.
+		// 判断是否需要提早曝光该bean，如果是单例、且允许循环依赖、且当前bean正在创建中，则提前曝光该bean
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
 		if (earlySingletonExposure) {
@@ -569,14 +570,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				logger.debug("Eagerly caching bean '" + beanName +
 						"' to allow for resolving potential circular references");
 			}
+			// aop就是在getEarlyBeanReference()方法中将advice动态织入bean中的,方法中会遍历BeanPostProcessor的实现类，包含AspectJAwareAdvisorAutoProxyCreator-自动代理创建器
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
 		// Initialize the bean instance.
 		Object exposedObject = bean;
 		try {
+			// 对bean进行填充，将各个属性值注入，如果存在依赖于其他bean的属性，则递归初始化
 			populateBean(beanName, mbd, instanceWrapper);
-			// 初始化一个bean
+			// 调用初始化方法初始化一个bean
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
