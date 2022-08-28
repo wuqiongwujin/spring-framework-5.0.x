@@ -182,10 +182,12 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		// singletonObject是一个FactoryBean,定义了获取bean的方法
 		Object singletonObject = this.singletonObjects.get(beanName);
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+			// 一级缓存中没有取到该bean，并且该bean已被标记为正在创建中
 			synchronized (this.singletonObjects) {
-				// 如果此bean正在加载则不处理
+				// 如果此bean正在实例化中，直接从二级缓存中获取
 				singletonObject = this.earlySingletonObjects.get(beanName);
 				if (singletonObject == null && allowEarlyReference) {
+					// 二级缓存中没有该bean，将该bean标记为正在创建中，并放入二级缓存中
 					// 获取类的初始化策略
 					// singletonFactory是一个ObjectFactory,定义了类的初始化策略
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
