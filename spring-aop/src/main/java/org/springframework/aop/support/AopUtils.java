@@ -247,6 +247,7 @@ public abstract class AopUtils {
 			Method[] methods = ReflectionUtils.getAllDeclaredMethods(clazz);
 			for (Method method : methods) {
 				if (introductionAwareMethodMatcher != null ?
+						// TransactionAttributeSourcePointcut类匹配事务增强器
 						introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions) :
 						methodMatcher.matches(method, targetClass)) {
 					return true;
@@ -317,6 +318,7 @@ public abstract class AopUtils {
 				// already processed
 				continue;
 			}
+			// 对普通bean的处理
 			if (canApply(candidate, clazz, hasIntroductions)) {
 				eligibleAdvisors.add(candidate);
 			}
